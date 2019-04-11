@@ -108,6 +108,7 @@ class DHTServer(DatagramServer):
         self.peers = []
         self.message_num = {"ping":0, "find_node":0, "get_peers":0, "announce_peer":0, "others":0}
         #self.fnd = open("nodes.txt","w+")
+        self.peer_file = open("peers.txt","w+")
 
     def handle(self, data, address): #
 #        print(data, address)
@@ -144,7 +145,7 @@ class DHTServer(DatagramServer):
             "q": "find_node",
             "a": {
                 "id": nid,
-                "target": nid #random_id()
+                "target": random_id()
             }
         }
         self.send_krpc(msg, address)
@@ -222,8 +223,8 @@ class DHTServer(DatagramServer):
             nid = msg["a"]["id"]
             token = infohash[:TOKEN_LENGTH]
             info = infohash.hex().upper() + '|' + address[0]
-            if random.random() > 0.95:
-                print(info)
+            #if random.random() > 0.95:
+            #    print(info)
             msg = {
                 "t": tid,
                 "y": "r",
@@ -239,7 +240,7 @@ class DHTServer(DatagramServer):
 
     def on_announce_peer_request(self, msg, address):
         try:
-            print('announce peer')
+            #print('announce peer')
             infohash = msg["a"]["info_hash"]
             token = msg["a"]["token"]
             nid = msg["a"]["id"]
@@ -252,8 +253,10 @@ class DHTServer(DatagramServer):
                     port = msg["a"]["port"]
                     if port < 1 or port > 65535: return
                 info = infohash.hex().upper()
-                print(info)
-                self.peers.append(info)
+                #print(info)
+                #self.peers.append(info)
+                self.peer_file.write(info+'\n')
+                self.peer_file.flush()
         except Exception as e:
             print(e)
             pass
@@ -289,10 +292,10 @@ class DHTServer(DatagramServer):
             pass
 
 if __name__ == '__main__':
-    sniffer = DHTServer(5000, 6881)
+    sniffer = DHTServer(5000, 6882)
     gevent.spawn(sniffer.auto_send_find_node)
     gevent.spawn(sniffer.re_join_DHT)
     gevent.spawn(sniffer.monitor)
     #sniffer.join_DHT()
-    print('Receiving datagrams on :6881')
+    print('Receiving datagrams on :6882')
     sniffer.serve_forever()
